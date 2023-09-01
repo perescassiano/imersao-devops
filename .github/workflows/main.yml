@@ -62,14 +62,24 @@ jobs:
         shell: bash
         run: |
           aws eks update-kubeconfig --name eks-imersao --region us-east-1
-      - name: Deploy to Kubernetes cluster
+      - name: Deploy worker to Kubernetes cluster
         uses: Azure/k8s-deploy@v4.9
         with:
           manifests: |
             04-k8s-deploy/02-worker/deployment.yaml
-            04-k8s-deploy/03-api/deployment.yaml
-            04-k8s-deploy/04-frontend/deployment.yaml
           images: |
             perescassiano/trader-worker:${{ github.run_number }}
+      - name: Deploy api to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.9
+        with:
+          manifests: |
+            04-k8s-deploy/03-api/deployment.yaml
+          images: |
             perescassiano/trader-api:${{ github.run_number }}
+      - name: Deploy web app to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.9
+        with:
+          manifests: |
+            04-k8s-deploy/04-frontend/deployment.yaml
+          images: |
             perescassiano/trader-web:${{ github.run_number }}
