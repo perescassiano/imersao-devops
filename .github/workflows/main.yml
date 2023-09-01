@@ -61,6 +61,6 @@ jobs:
       - name: Kubeconfig setup
         shell: bash
         run: |
-          aws eks update-kubeconfig --name imersao-eks --region us-east-1
+          aws eks update-kubeconfig --name eks-imersao --region us-east-1
       - name: Step 3
         run: echo "Deploy microservices to EKS"
