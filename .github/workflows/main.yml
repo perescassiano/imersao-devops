@@ -42,8 +42,8 @@ jobs:
             perescassiano/trader-web:${{ github.run_number }}
             perescassiano/trader-web:latest
           build-args: |
-            NEXT_PUBLIC_NEST_URL=a6d42da547d884219964563fe3b7d050-1865764301.us-east-1.elb.amazonaws.com
-            NEXT_PUBLIC_NEST_URL_API=a8c6a1e04bfa04dbe9701b49e1be3f13-1857507153.us-east-1.elb.amazonaws.com
+            next_url=a6d42da547d884219964563fe3b7d050-1865764301.us-east-1.elb.amazonaws.com
+            next_url_api=a8c6a1e04bfa04dbe9701b49e1be3f13-1857507153.us-east-1.elb.amazonaws.com
       - name: Step 3
         run: echo "Push image to docker repo - Dockerhub"
   CD:
