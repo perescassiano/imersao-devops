@@ -1,0 +1,85 @@
+name: CI-CD
+on:
+  push:
+    branches: ["main","master"]
+  workflow_dispatch:
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout from code base
+        uses: actions/checkout@v3.6.0
+      - name: DockerHub auth
+        uses: docker/login-action@v2.2.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USR }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+      - name: Build and push worker docker image
+        uses: docker/build-push-action@v4.1.1
+        with:
+          context: ./01-worker
+          file: ./01-worker/Dockerfile
+          push: true
+          tags: |
+            perescassiano/trader-worker:${{ github.run_number }}
+            perescassiano/trader-worker:latest
+      - name: Build and push API docker image
+        uses: docker/build-push-action@v4.1.1
+        with:
+          context: ./02-api
+          file: ./02-api/Dockerfile
+          push: true
+          tags: |
+            perescassiano/trader-api:${{ github.run_number }}
+            perescassiano/trader-api:latest
+      - name: Build and push web app docker image
+        uses: docker/build-push-action@v4.1.1
+        with:
+          context: ./03-frontend
+          file: ./03-frontend/Dockerfile
+          push: true
+          tags: |
+            perescassiano/trader-web:${{ github.run_number }}
+            perescassiano/trader-web:latest
+          build-args: |
+            next_url=a6d42da547d884219964563fe3b7d050-1865764301.us-east-1.elb.amazonaws.com
+            next_url_api=a8c6a1e04bfa04dbe9701b49e1be3f13-1857507153.us-east-1.elb.amazonaws.com
+      - name: Step 3
+        run: echo "Push image to docker repo - Dockerhub"
+  CD:
+    runs-on: ubuntu-latest
+    needs: [CI]
+    steps:
+      - name: Checkout from code base
+        uses: actions/checkout@v3.6.0
+      - name: AWS credential setup
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+          aws-region: us-east-1
+      - name: Kubeconfig setup
+        shell: bash
+        run: |
+          aws eks update-kubeconfig --name eks-imersao --region us-east-1
+      - name: Deploy worker to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.9
+        with:
+          manifests: |
+            04-k8s-deploy/02-worker/deployment.yaml
+          images: |
+            perescassiano/trader-worker:${{ github.run_number }}
+      - name: Deploy api to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.9
+        with:
+          manifests: |
+            04-k8s-deploy/03-api/deployment.yaml
+          images: |
+            perescassiano/trader-api:${{ github.run_number }}
+      - name: Deploy web app to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.9
+        with:
+          manifests: |
+            04-k8s-deploy/04-frontend/deployment.yaml
+          images: |
+            perescassiano/trader-web:${{ github.run_number }}
